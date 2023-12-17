@@ -1,19 +1,18 @@
 # -------------------//// Note input pdf should contain text less than 2000 characters////-------------------#
 
-
 # Environment variables
 import os
-import tkinter
-import matplotlib
+
+# for saving file locally in server
+from werkzeug.utils import secure_filename
 
 # Flask App
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for, request, send_from_directory
 
 # Api request
 import requests
 
 # PDF to Text imports
-from tkinter import filedialog
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
 from pdfminer.converter import TextConverter
@@ -22,14 +21,13 @@ import io
 
 datas = None
 
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('FLASK_KEY')
+
 
 # Convert PDF to text
 def pdf_to_text(data):
     global datas
-    fp = open(data, 'rb')
     pdf_resource_manager = PDFResourceManager()
     laparams = LAParams()
     stringio = io.StringIO()
@@ -39,10 +37,9 @@ def pdf_to_text(data):
     interpreter = PDFPageInterpreter(pdf_resource_manager, text)
 
     # Process each page contained in the document.
-    for page in PDFPage.get_pages(fp):
+    for page in PDFPage.get_pages(data):
         interpreter.process_page(page)
         datas = stringio.getvalue()
-
 
 
 def text_mp3():
@@ -67,7 +64,7 @@ def text_mp3():
     print(" Text converted into mp3 data")
 
     # store this response content in mp3 file
-    with open("output.mp3", "wb") as out:
+    with open("static/files/output.mp3", "wb") as out:
         out.write(response.content)
         print('Audio content written to file "output.mp3"')
 
@@ -78,18 +75,30 @@ def index():
     if saved is None:
         saved = ""
     if request.method == "POST":
-        matplotlib.use('Agg')
-        tk = tkinter.Tk()
-        print("clicked")
-        data = filedialog.askopenfilename()
+        data = request.files["file"]
+        # print(data)
+        # print(type(data))
+
+        data.save(secure_filename(data.filename))
+        print('file uploaded successfully')
+
         pdf_to_text(data)
         # print(datas)
         print(" Pdf converted to string")
 
         text_mp3()
-        saved = "Mp3 file downloaded"
-        redirect(url_for("index",saved=saved))
-    return render_template("index.html",saved=saved)
+        saved = "(Output) Mp3 file downloaded"
+
+        file_name = data.filename.replace(" ", "_")
+        os.remove(file_name)
+        return redirect(url_for("download"))
+        # render_template("index.html", saved=saved)
+    return render_template("index.html")
+
+
+@app.route('/download')
+def download():
+    return send_from_directory(directory='static/files', path="output.mp3", as_attachment=False)
 
 
 if __name__ == "__main__":
