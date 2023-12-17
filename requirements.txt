@@ -3,3 +3,4 @@ Flask==2.2.5
 pdfminer==20191125
 gunicorn==21.2.0
 tk==0.1.0
+matplotlib==3.8.2

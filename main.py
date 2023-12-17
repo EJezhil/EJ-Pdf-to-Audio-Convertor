@@ -4,6 +4,7 @@
 # Environment variables
 import os
 import tkinter
+import matplotlib
 
 # Flask App
 from flask import Flask, render_template, redirect, url_for, request
@@ -77,6 +78,7 @@ def index():
     if saved is None:
         saved = ""
     if request.method == "POST":
+        matplotlib.use('Agg')
         tk = tkinter.Tk()
         print("clicked")
         data = filedialog.askopenfilename()
